@@ -1,5 +1,6 @@
 import logging
 import os
+from os.path import isdir
 import requests
 import shutil
 import subprocess
@@ -58,18 +59,6 @@ def process_chapters(chapters: dict):
         )
     logger.debug(f"Processed {len(out)} chapters")
     return out
-
-
-def check_continue():
-    while True:
-        selection = input("\nContinue? [y|n]: ").lower()
-        if selection == "n":
-            print("Exiting...")
-            return False
-        if selection == "y":
-            return True
-        elif selection != "y":
-            print("Please enter 'y' or 'n'.")
 
 
 def get_metadata(asin: str, get_chapters: bool = True) -> dict:
@@ -188,11 +177,25 @@ def process_audiobook(
     )
     logger.info(f"Writing to '{path}'")
 
-    if not force and not check_continue():
-        return
+    if os.path.exists(path):
+        if not force:
+            if not os.path.isdir(path):
+                raise FileExistsError(
+                    f"Output path '{path}' if a file. Delete or use --force flag"
+                )
+            elif len(os.listdir(path)) > 0:
+                raise FileExistsError(
+                    f"Output path '{path}' exists and is non empty. Delete or use --force flag"
+                )
+        else:
+            if not os.path.isdir(path):
+                os.remove(path)
 
     logger.debug(f"Creating output directory at '{path}'")
-    os.makedirs(path, exist_ok=True)
+    os.makedirs(
+        path,
+        exist_ok=True,
+    )
 
     with tempfile.TemporaryDirectory(dir=path) as temp_dir:
         metadata_filepath = write_metadata_file(metadata, temp_dir, get_chapters)
