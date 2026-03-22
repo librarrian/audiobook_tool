@@ -62,7 +62,7 @@ def process_chapters(chapters: dict):
 
 
 def get_metadata(asin: str, get_chapters: bool = True) -> dict:
-    logger.info("Retrieving metadata...")
+    logger.debug("Retrieving metadata...")
     api_url = "https://api.audnex.us"
     metadata = {}
     book_data = get(f"{api_url}/books/{asin}")
@@ -75,12 +75,12 @@ def get_metadata(asin: str, get_chapters: bool = True) -> dict:
         [narrator["name"] for narrator in book_data["narrators"]][0:5]
     ) + (", ..." if len(book_data["narrators"]) > 5 else "")
     metadata["publisher"] = book_data["publisherName"]
-    logger.info(f"Found metadata for: {metadata["title"]} by {metadata["author"]}")
+    logger.debug(f"Found metadata for: {metadata["title"]} by {metadata["author"]}")
 
     if get_chapters:
         chapters = get(f"{api_url}/books/{asin}/chapters")
         metadata["chapters"] = process_chapters(chapters)
-    logger.info("Chapters retrieved.")
+    logger.debug("Chapters retrieved.")
     return metadata
 
 
@@ -108,14 +108,14 @@ def print_debug(metadata: dict, get_chapters: bool, log: bool):
 
 def write_metadata_file(metadata: dict, path: str, get_chapters: bool):
     metadata_filepath = os.path.join(path, "metadata.txt")
-    logger.info(f"Writing metadata file to '{metadata_filepath}'")
+    logger.debug(f"Writing metadata file to '{metadata_filepath}'")
     out = f";FFMETADATA1\nalbum={metadata["title"]}\nalbum_artist={metadata['author']}\nartist={metadata['author']}\nyear={metadata['year']}"
     if get_chapters:
         for chapter in metadata["chapters"]:
             out += f"\n\n[CHAPTER]\nTIMEBASE=1/1000\nSTART={chapter["start"]}\nEND={chapter["end"]}\ntitle={chapter["title"]} "
     with open(metadata_filepath, "w") as f:
         f.write(out)
-    logger.info("Metadata file written")
+    logger.debug("Metadata file written")
     return metadata_filepath
 
 
@@ -135,7 +135,7 @@ def merge_files(input: str, temp_dir: str) -> str:
         f.write(input_list)
     # Merge using ffmpeg
     output = os.path.join(temp_dir, "merged.m4b")
-    logger.info(f"Merging files to '{output}'")
+    logger.debug(f"Merging files to '{output}'")
     try_command(
         f'ffmpeg -f concat -safe 0 -i "{merged_input_list}"  -c:a libfdk_aac -vbr 4 -vn  -y "{output}"'
     )
@@ -145,7 +145,7 @@ def merge_files(input: str, temp_dir: str) -> str:
 def add_metadata_to_file(input, metadata_filepath, get_chapters, output_dir):
     extension = os.path.splitext(input)[1]
     output_filepath = os.path.join(output_dir, f"with_metadata{extension}")
-    logger.info(f"Adding metadata to file '{output_filepath}'")
+    logger.debug(f"Adding metadata to file '{output_filepath}'")
     try_command(
         f'ffmpeg -y -i "{input}" -i "{metadata_filepath}" -map 0:a -map_metadata 1 {"-map_chapters 1 " if get_chapters else ""}-c copy "{output_filepath}"'
     )
@@ -169,13 +169,13 @@ def process_audiobook(
 
     print_debug(metadata, get_chapters=False, log=True)
     if merge:
-        logger.info("Merging files")
-    logger.info(
+        logger.debug("Merging files")
+    logger.debug(
         f"Importing {len(metadata["chapters"])} chapters"
         if get_chapters
         else "Not importing chapters."
     )
-    logger.info(f"Writing to '{path}'")
+    logger.debug(f"Writing to '{path}'")
 
     if os.path.exists(path):
         if not force:
