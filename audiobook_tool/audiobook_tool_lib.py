@@ -143,8 +143,8 @@ def merge_files(input: str, temp_dir: str) -> str:
 
 
 def add_metadata_to_file(input, metadata_filepath, get_chapters, output_dir):
-    extension = os.path.splitext(input)[1]
-    output_filepath = os.path.join(output_dir, f"with_metadata{extension}")
+    file_name, extension = os.path.splitext(os.path.basename(input))
+    output_filepath = os.path.join(output_dir, f"{file_name}_with_metadata{extension}")
     logger.debug(f"Adding metadata to file '{output_filepath}'")
     try_command(
         f'ffmpeg -y -i "{input}" -i "{metadata_filepath}" -map 0:a -map_metadata 1 {"-map_chapters 1 " if get_chapters else ""}-c copy "{output_filepath}"'
@@ -218,8 +218,9 @@ def process_audiobook(
             file_with_metadata = add_metadata_to_file(
                 file, metadata_filepath, get_chapters, temp_dir
             )
-            extension = os.path.splitext(file_with_metadata)[1]
+            # file_name, extension = os.path.splitext(file_with_metadata)[1]
+            file_name = os.path.basename(file_with_metadata)
             shutil.move(
                 file_with_metadata,
-                os.path.join(path, f"{metadata['title']}{extension}"),
+                os.path.join(path, file_name),
             )
