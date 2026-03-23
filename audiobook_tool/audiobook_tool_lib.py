@@ -202,15 +202,24 @@ def process_audiobook(
 
         if merge:
             input_path = merge_files(input_path, temp_dir)
-        else:
-            if os.path.isdir(input_path):
-                raise IsADirectoryError(
-                    "The given input is a directory, not a file. If the contents of the directory should be merged, inlcude the --merge flag."
-                )
-        file_with_metadata = add_metadata_to_file(
-            input_path, metadata_filepath, get_chapters, temp_dir
-        )
-        extension = os.path.splitext(file_with_metadata)[1]
-        shutil.move(
-            file_with_metadata, os.path.join(path, f"{metadata['title']}{extension}")
-        )
+        # else:
+        #     if os.path.isdir(input_path):
+        #         raise IsADirectoryError(
+        #             "The given input is a directory, not a file. If the contents of the directory should be merged, inlcude the --merge flag."
+        #         )
+        input_paths = [input_path]
+        if os.path.isdir(input_path):
+            input_paths = []
+            for file in sorted(os.listdir(input_path), key=str.lower):
+                if os.path.splitext(file)[1] in {".m4a", ".m4b", ".mp3", ".flac"}:
+                    input_paths.append(os.path.abspath(os.path.join(input_path, file)))
+
+        for file in input_paths:
+            file_with_metadata = add_metadata_to_file(
+                file, metadata_filepath, get_chapters, temp_dir
+            )
+            extension = os.path.splitext(file_with_metadata)[1]
+            shutil.move(
+                file_with_metadata,
+                os.path.join(path, f"{metadata['title']}{extension}"),
+            )
