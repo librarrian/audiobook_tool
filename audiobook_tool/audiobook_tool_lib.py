@@ -217,7 +217,9 @@ def process_audiobook(
             file_with_metadata = add_metadata_to_file(
                 file, metadata_filepath, get_chapters, temp_dir
             )
-            file_name, extension = os.path.splitext(file_with_metadata)
+            file_name, extension = os.path.splitext(
+                os.path.basename(file_with_metadata)
+            )
             if len(input_paths) == 1:
                 file_name = f"{metadata['title']}{extension}"
             else:
