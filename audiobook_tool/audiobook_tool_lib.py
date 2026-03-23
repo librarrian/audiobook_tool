@@ -66,6 +66,7 @@ def get_metadata(asin: str, get_chapters: bool = True) -> dict:
     api_url = "https://api.audnex.us"
     metadata = {}
     book_data = get(f"{api_url}/books/{asin}")
+    metadata["asin"] = asin
     metadata["author"] = book_data["authors"][0]["name"]
     metadata["title"] = book_data["title"]
     metadata["year"] = book_data["releaseDate"].split("-")[0]
@@ -109,7 +110,7 @@ def print_debug(metadata: dict, get_chapters: bool, log: bool):
 def write_metadata_file(metadata: dict, path: str, get_chapters: bool):
     metadata_filepath = os.path.join(path, "metadata.txt")
     logger.debug(f"Writing metadata file to '{metadata_filepath}'")
-    out = f";FFMETADATA1\nalbum={metadata["title"]}\nalbum_artist={metadata['author']}\nartist={metadata['author']}\nyear={metadata['year']}"
+    out = f";FFMETADATA1\nalbum={metadata["title"]}\nalbum_artist={metadata['author']}\nartist={metadata['author']}\nyear={metadata['year']}\nasin={metadata['asin']}"
     if get_chapters:
         for chapter in metadata["chapters"]:
             out += f"\n\n[CHAPTER]\nTIMEBASE=1/1000\nSTART={chapter["start"]}\nEND={chapter["end"]}\ntitle={chapter["title"]} "
