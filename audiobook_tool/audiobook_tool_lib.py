@@ -8,7 +8,7 @@ import tempfile
 
 logger = logging.getLogger(__name__)
 
-
+WITH_METADATA_SUFFIX = "_with_metadata"
 class GetRequestError(Exception):
     pass
 
@@ -144,7 +144,9 @@ def merge_files(input: str, temp_dir: str) -> str:
 
 def add_metadata_to_file(input, metadata_filepath, get_chapters, output_dir):
     file_name, extension = os.path.splitext(os.path.basename(input))
-    output_filepath = os.path.join(output_dir, f"{file_name}_with_metadata{extension}")
+    output_filepath = os.path.join(
+        output_dir, f"{file_name}{WITH_METADATA_SUFFIX}{extension}"
+    )
     logger.debug(f"Adding metadata to file '{output_filepath}'")
     try_command(
         f'ffmpeg -y -i "{input}" -i "{metadata_filepath}" -map 0:a -map_metadata 1 {"-map_chapters 1 " if get_chapters else ""}-c copy "{output_filepath}"'
@@ -197,29 +199,28 @@ def process_audiobook(
         exist_ok=True,
     )
 
+    input_paths = [input_path]
+    if os.path.isdir(input_path):
+        input_paths = []
+        for file in sorted(os.listdir(input_path), key=str.lower):
+            if os.path.splitext(file)[1] in {".m4a", ".m4b", ".mp3", ".flac"}:
+                input_paths.append(os.path.abspath(os.path.join(input_path, file)))
+
     with tempfile.TemporaryDirectory(dir=path) as temp_dir:
         metadata_filepath = write_metadata_file(metadata, temp_dir, get_chapters)
 
         if merge:
-            input_path = merge_files(input_path, temp_dir)
-        # else:
-        #     if os.path.isdir(input_path):
-        #         raise IsADirectoryError(
-        #             "The given input is a directory, not a file. If the contents of the directory should be merged, inlcude the --merge flag."
-        #         )
-        input_paths = [input_path]
-        if os.path.isdir(input_path):
-            input_paths = []
-            for file in sorted(os.listdir(input_path), key=str.lower):
-                if os.path.splitext(file)[1] in {".m4a", ".m4b", ".mp3", ".flac"}:
-                    input_paths.append(os.path.abspath(os.path.join(input_path, file)))
+            input_paths = [merge_files(input_path, temp_dir)]
 
         for file in input_paths:
             file_with_metadata = add_metadata_to_file(
                 file, metadata_filepath, get_chapters, temp_dir
             )
-            # file_name, extension = os.path.splitext(file_with_metadata)[1]
-            file_name = os.path.basename(file_with_metadata)
+            file_name, extension = os.path.splitext(file_with_metadata)
+            if len(input_paths) == 1:
+                file_name = f"{metadata['title']}{extension}"
+            else:
+                file_name = file_name[: -len(WITH_METADATA_SUFFIX)]
             shutil.move(
                 file_with_metadata,
                 os.path.join(path, file_name),
