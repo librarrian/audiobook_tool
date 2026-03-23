@@ -223,7 +223,9 @@ def process_audiobook(
             if len(input_paths) == 1:
                 file_name = f"{metadata['title']}{extension}"
             else:
-                file_name = file_name[: -len(WITH_METADATA_SUFFIX)]
+                file_name = (
+                    f"{file_name[: -len(WITH_METADATA_SUFFIX)].strip()}{extension}"
+                )
             shutil.move(
                 file_with_metadata,
                 os.path.join(path, file_name),
